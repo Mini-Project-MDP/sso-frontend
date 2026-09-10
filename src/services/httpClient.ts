@@ -8,11 +8,14 @@ export const httpClient = axios.create({
   },
 })
 
-// Request Interceptor: Attach JWT Token if present
+// Request Interceptor: Attach Bearer token if present
+// Priority: sso_access_token (JWT for app APIs) → sso_session_token (for admin panel)
 httpClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('sso_access_token')
-    if (token && token !== 'undefined' && config.headers) {
+    const accessToken = localStorage.getItem('sso_access_token')
+    const sessionToken = localStorage.getItem('sso_session_token')
+    const token = (accessToken && accessToken !== 'undefined') ? accessToken : sessionToken
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config

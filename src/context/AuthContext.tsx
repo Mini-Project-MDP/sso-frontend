@@ -6,6 +6,7 @@ interface AuthContextType {
   user: SSOUser | null
   sessionToken: string | null
   isAuthenticated: boolean
+  isAdmin: boolean
   isLoading: boolean
   login: (user: SSOUser, sessionToken: string) => void
   logout: () => void
@@ -51,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         sessionToken,
         isAuthenticated: !!user,
+        isAdmin: !!user?.is_master,
         isLoading,
         login,
         logout,

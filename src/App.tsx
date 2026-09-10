@@ -1,11 +1,12 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { Navbar } from './components/Navbar'
 import { Sidebar } from './components/Sidebar'
 
 import { LoginPage } from './pages/auth/LoginPage'
 import { DemoClientPage } from './pages/auth/DemoClientPage'
+import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
 import { AppsManagement } from './pages/admin/AppsManagement'
 import { UsersManagement } from './pages/admin/UsersManagement'
@@ -27,6 +28,17 @@ const AdminLayout: React.FC = () => {
   )
 }
 
+// Guard: redirect to /admin/login if not authenticated as master admin
+const ProtectedAdminRoute: React.FC = () => {
+  const { isAdmin, isAuthenticated } = useAuth()
+
+  if (!isAuthenticated || !isAdmin) {
+    return <Navigate to="/admin/login" replace />
+  }
+
+  return <Outlet />
+}
+
 export const App: React.FC = () => {
   return (
     <AuthProvider>
@@ -36,18 +48,23 @@ export const App: React.FC = () => {
           <Route path="/sso/login" element={<LoginPage />} />
           <Route path="/sso/demo-client" element={<DemoClientPage />} />
 
-          {/* Admin Management Dashboard */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="apps" element={<AppsManagement />} />
-            <Route path="users" element={<UsersManagement />} />
-            <Route path="mappings" element={<UserAppMappingPage />} />
-            <Route path="sessions" element={<SessionsManagementPage />} />
-            <Route path="audit-logs" element={<AuditLogsPage />} />
+          {/* Admin Login */}
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+
+          {/* Admin Management Dashboard — protected, master only */}
+          <Route element={<ProtectedAdminRoute />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="apps" element={<AppsManagement />} />
+              <Route path="users" element={<UsersManagement />} />
+              <Route path="mappings" element={<UserAppMappingPage />} />
+              <Route path="sessions" element={<SessionsManagementPage />} />
+              <Route path="audit-logs" element={<AuditLogsPage />} />
+            </Route>
           </Route>
 
           {/* Catch all redirect */}
-          <Route path="*" element={<Navigate to="/admin" replace />} />
+          <Route path="*" element={<Navigate to="/admin/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

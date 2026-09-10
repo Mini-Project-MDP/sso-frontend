@@ -10,7 +10,7 @@ export const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     logout()
-    navigate('/sso/login')
+    navigate('/admin/login')
   }
 
   return (
