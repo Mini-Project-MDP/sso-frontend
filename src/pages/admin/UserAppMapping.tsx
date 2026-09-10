@@ -1,38 +1,31 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Plus, Trash2, AppWindow } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ssoService } from '../../services/ssoService'
 import type { UserAppMapping, SSOUser, ClientApp } from '../../types/sso'
 import { Table, Button, Tag, Modal, Form, Input, Select, message, Card, Tooltip } from 'antd'
 
 export const UserAppMappingPage: React.FC = () => {
-  const [mappings, setMappings] = useState<UserAppMapping[]>([])
-  const [users, setUsers] = useState<SSOUser[]>([])
-  const [apps, setApps] = useState<ClientApp[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
+  const queryClient = useQueryClient()
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [form] = Form.useForm()
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [m, u, a] = await Promise.all([
-        ssoService.getMappings(),
-        ssoService.getUsers(),
-        ssoService.getApps(),
-      ])
-      setMappings(m || [])
-      setUsers(u || [])
-      setApps(a || [])
-    } catch (err: any) {
-      message.error(err.response?.data?.error || 'Failed to load mapping matrix')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: mappings = [], isLoading: loading } = useQuery<UserAppMapping[]>({
+    queryKey: ['admin', 'mappings'],
+    queryFn: () => ssoService.getMappings(),
+  })
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  const { data: users = [] } = useQuery<SSOUser[]>({
+    queryKey: ['admin', 'users'],
+    queryFn: () => ssoService.getUsers(),
+  })
+
+  const { data: apps = [] } = useQuery<ClientApp[]>({
+    queryKey: ['admin', 'apps'],
+    queryFn: () => ssoService.getApps(),
+  })
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'mappings'] })
 
   const handleCreateMapping = async (values: any) => {
     try {
@@ -51,7 +44,7 @@ export const UserAppMappingPage: React.FC = () => {
       message.success('User application mapping created/updated successfully!')
       setCreateModalOpen(false)
       form.resetFields()
-      loadData()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to map user to application')
     }
@@ -61,7 +54,7 @@ export const UserAppMappingPage: React.FC = () => {
     try {
       await ssoService.deleteMapping(id)
       message.success('Mapping removed')
-      loadData()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to remove mapping')
     }

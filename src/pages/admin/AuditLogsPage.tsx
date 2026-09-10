@@ -1,28 +1,19 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { RefreshCw } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ssoService } from '../../services/ssoService'
 import type { AuditLog } from '../../types/sso'
 import { Table, Button, Tag, message, Card } from 'antd'
 
 export const AuditLogsPage: React.FC = () => {
-  const [logs, setLogs] = useState<AuditLog[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
+  const queryClient = useQueryClient()
 
-  const fetchLogs = async () => {
-    setLoading(true)
-    try {
-      const data = await ssoService.getAuditLogs()
-      setLogs(data || [])
-    } catch (err: any) {
-      message.error(err.response?.data?.error || 'Failed to fetch audit logs')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: logs = [], isLoading: loading } = useQuery<AuditLog[]>({
+    queryKey: ['admin', 'audit-logs'],
+    queryFn: () => ssoService.getAuditLogs(),
+  })
 
-  useEffect(() => {
-    fetchLogs()
-  }, [])
+  const handleRefresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'audit-logs'] })
 
   const columns = [
     {
@@ -88,7 +79,7 @@ export const AuditLogsPage: React.FC = () => {
         </div>
         <Button
           icon={<RefreshCw className="w-4 h-4" />}
-          onClick={fetchLogs}
+          onClick={handleRefresh}
           loading={loading}
           className="!bg-white !border-slate-300 !text-slate-700 hover:!border-red-500"
         >

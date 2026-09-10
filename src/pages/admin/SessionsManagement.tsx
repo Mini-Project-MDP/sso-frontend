@@ -1,34 +1,25 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { LogOut, RefreshCw, Globe } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ssoService } from '../../services/ssoService'
 import type { SSOSession } from '../../types/sso'
 import { Table, Button, Tag, message, Card, Tooltip } from 'antd'
 
 export const SessionsManagementPage: React.FC = () => {
-  const [sessions, setSessions] = useState<SSOSession[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
+  const queryClient = useQueryClient()
 
-  const fetchSessions = async () => {
-    setLoading(true)
-    try {
-      const data = await ssoService.getSessions()
-      setSessions(data || [])
-    } catch (err: any) {
-      message.error(err.response?.data?.error || 'Failed to fetch active sessions')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: sessions = [], isLoading: loading } = useQuery<SSOSession[]>({
+    queryKey: ['admin', 'sessions'],
+    queryFn: () => ssoService.getSessions(),
+  })
 
-  useEffect(() => {
-    fetchSessions()
-  }, [])
+  const handleRefresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'sessions'] })
 
   const handleRevokeSession = async (id: string) => {
     try {
       await ssoService.revokeSession(id)
       message.success('Session revoked immediately')
-      fetchSessions()
+      queryClient.invalidateQueries({ queryKey: ['admin', 'sessions'] })
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to revoke session')
     }
@@ -108,7 +99,7 @@ export const SessionsManagementPage: React.FC = () => {
         </div>
         <Button
           icon={<RefreshCw className="w-4 h-4" />}
-          onClick={fetchSessions}
+          onClick={handleRefresh}
           loading={loading}
           className="!bg-white !border-slate-300 !text-slate-700 hover:!border-red-500"
         >

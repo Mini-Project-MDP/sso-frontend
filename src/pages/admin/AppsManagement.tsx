@@ -1,32 +1,22 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Plus, Key, Trash2, Eye, EyeOff } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ssoService } from '../../services/ssoService'
 import type { ClientApp } from '../../types/sso'
 import { Table, Button, Tag, Modal, Form, Input, Switch, message, Tooltip, Card } from 'antd'
 
 export const AppsManagement: React.FC = () => {
-  const [apps, setApps] = useState<ClientApp[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
+  const queryClient = useQueryClient()
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({})
-
   const [form] = Form.useForm()
 
-  const fetchApps = async () => {
-    setLoading(true)
-    try {
-      const data = await ssoService.getApps()
-      setApps(data || [])
-    } catch (err: any) {
-      message.error(err.response?.data?.error || 'Failed to fetch connected apps')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: apps = [], isLoading: loading } = useQuery<ClientApp[]>({
+    queryKey: ['admin', 'apps'],
+    queryFn: () => ssoService.getApps(),
+  })
 
-  useEffect(() => {
-    fetchApps()
-  }, [])
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'apps'] })
 
   const handleCreateApp = async (values: any) => {
     try {
@@ -34,7 +24,7 @@ export const AppsManagement: React.FC = () => {
       message.success('Client Application registered successfully!')
       setCreateModalOpen(false)
       form.resetFields()
-      fetchApps()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to register client application')
     }
@@ -44,7 +34,7 @@ export const AppsManagement: React.FC = () => {
     try {
       await ssoService.rotateSecret(id)
       message.success('Client secret rotated successfully!')
-      fetchApps()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to rotate secret')
     }
@@ -54,7 +44,7 @@ export const AppsManagement: React.FC = () => {
     try {
       await ssoService.toggleAppStatus(id, active)
       message.success('App status updated')
-      fetchApps()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to update app status')
     }
@@ -64,7 +54,7 @@ export const AppsManagement: React.FC = () => {
     try {
       await ssoService.deleteApp(id)
       message.success('Application deleted')
-      fetchApps()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to delete app')
     }

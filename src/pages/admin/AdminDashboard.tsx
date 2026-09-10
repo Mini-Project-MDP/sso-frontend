@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Link } from 'react-router'
 import {
   AppWindow,
@@ -10,35 +10,32 @@ import {
   RefreshCw,
   Plus,
 } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ssoService } from '../../services/ssoService'
 import type { StatsResponse, AuditLog, ClientApp } from '../../types/sso'
 import { Card, Tag, Button, Avatar } from 'antd'
 
 export const AdminDashboard: React.FC = () => {
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<StatsResponse | null>(null)
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
-  const [apps, setApps] = useState<ClientApp[]>([])
+  const queryClient = useQueryClient()
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [s, logs, a] = await Promise.all([
-        ssoService.getStats().catch(() => null),
-        ssoService.getAuditLogs().catch(() => []),
-        ssoService.getApps().catch(() => []),
-      ])
-      setStats(s)
-      setAuditLogs(logs)
-      setApps(a)
-    } finally {
-      setLoading(false)
-    }
+  const { data: stats } = useQuery<StatsResponse | null>({
+    queryKey: ['admin', 'stats'],
+    queryFn: () => ssoService.getStats().catch(() => null),
+  })
+
+  const { data: auditLogs = [], isLoading } = useQuery<AuditLog[]>({
+    queryKey: ['admin', 'audit-logs'],
+    queryFn: () => ssoService.getAuditLogs().catch(() => []),
+  })
+
+  const { data: apps = [] } = useQuery<ClientApp[]>({
+    queryKey: ['admin', 'apps'],
+    queryFn: () => ssoService.getApps().catch(() => []),
+  })
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin'] })
   }
-
-  useEffect(() => {
-    loadData()
-  }, [])
 
   const statCards = [
     {
@@ -88,8 +85,8 @@ export const AdminDashboard: React.FC = () => {
         <div className="flex items-center gap-2">
           <Button
             icon={<RefreshCw className="w-4 h-4" />}
-            onClick={loadData}
-            loading={loading}
+            onClick={handleRefresh}
+            loading={isLoading}
             className="!bg-white !border-slate-300 !text-slate-700 hover:!border-red-500"
           >
             Refresh Stats

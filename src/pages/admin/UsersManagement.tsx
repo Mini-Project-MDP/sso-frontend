@@ -1,30 +1,21 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Plus, Crown } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ssoService } from '../../services/ssoService'
 import type { SSOUser } from '../../types/sso'
 import { Table, Button, Tag, Modal, Form, Input, Switch, message, Card, Avatar } from 'antd'
 
 export const UsersManagement: React.FC = () => {
-  const [users, setUsers] = useState<SSOUser[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
+  const queryClient = useQueryClient()
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [form] = Form.useForm()
 
-  const fetchUsers = async () => {
-    setLoading(true)
-    try {
-      const data = await ssoService.getUsers()
-      setUsers(data || [])
-    } catch (err: any) {
-      message.error(err.response?.data?.error || 'Failed to fetch SSO users')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: users = [], isLoading: loading } = useQuery<SSOUser[]>({
+    queryKey: ['admin', 'users'],
+    queryFn: () => ssoService.getUsers(),
+  })
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
 
   const handleCreateUser = async (values: any) => {
     try {
@@ -32,7 +23,7 @@ export const UsersManagement: React.FC = () => {
       message.success('SSO User created successfully!')
       setCreateModalOpen(false)
       form.resetFields()
-      fetchUsers()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to create user')
     }
@@ -42,7 +33,7 @@ export const UsersManagement: React.FC = () => {
     try {
       await ssoService.toggleMasterUser(id, isMaster)
       message.success('Master user status updated')
-      fetchUsers()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to update master status')
     }
@@ -53,7 +44,7 @@ export const UsersManagement: React.FC = () => {
     try {
       await ssoService.updateUserStatus(id, nextStatus)
       message.success(`User status updated to ${nextStatus}`)
-      fetchUsers()
+      invalidate()
     } catch (err: any) {
       message.error(err.response?.data?.error || 'Failed to update user status')
     }
