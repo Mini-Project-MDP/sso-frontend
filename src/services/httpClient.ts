@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 export const httpClient = axios.create({
-  baseURL: import.meta.env.VITE_SSO_API_URL || 'http://localhost:8082',
+  baseURL: import.meta.env.VITE_SSO_API_URL || 'https://sso-service.vercel.app',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

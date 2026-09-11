@@ -12,7 +12,7 @@ export const DemoClientPage: React.FC = () => {
 
   const [clientId, setClientId] = useState('app_asset_mgmt_123')
   const [clientSecret, setClientSecret] = useState('secret_asset_mgmt_999')
-  const [redirectUri, setRedirectUri] = useState('http://localhost:5174/sso/demo-client')
+  const [redirectUri, setRedirectUri] = useState('https://asset-system-frontend.vercel.app/sso/callback')
 
   const [authCode, setAuthCode] = useState<string | null>(codeParam)
   const [exchanging, setExchanging] = useState(false)
